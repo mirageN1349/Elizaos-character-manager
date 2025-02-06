@@ -3,6 +3,27 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import path from "node:path";
 import fs from "node:fs";
+import multer from "multer";
+
+const storage = multer.diskStorage({
+    destination: async function (req, file, cb) {
+        const uploadDir = path.join(
+            process.cwd(),
+            "..",
+            "characters",
+            "knowledge"
+        );
+
+        await fs.promises.mkdir(uploadDir, { recursive: true });
+
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    },
+});
+
+const upload = multer({ storage });
 
 import {
     AgentRuntime,
@@ -358,6 +379,40 @@ export function createApiRouter(
 
         res.json({ success: true, message: "Agent restarted" });
     });
+
+    router.post(
+        "/agents/:agentId/upload-file-to-knowledge",
+        upload.single("file"),
+        async (req, res) => {
+            const file = req.file;
+            const agentId = req.params.agentId as UUID;
+            const agent = agents.get(agentId);
+
+            if (!agent) {
+                res.status(404).json({ error: "Agent not found" });
+                return;
+            }
+
+            const fileContent = await fs.promises.readFile(file.path, "utf-8");
+            const fileExtension = path
+                .extname(file.originalname)
+                .toLowerCase() as "txt" | "md" | "pdf";
+
+            console.log(file.originalname, fileExtension, agent.agentId);
+
+            await agent.ragKnowledgeManager.processFile({
+                path: file.originalname,
+                content: fileContent,
+                type: fileExtension,
+                isShared: false,
+            });
+
+            res.json({
+                success: true,
+                message: "Knowaledge file uploaded and database updated!",
+            });
+        }
+    );
 
     // router.get("/character", async (req, res) => {
     //     // const character = req.body;

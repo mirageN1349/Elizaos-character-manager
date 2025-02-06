@@ -108,7 +108,15 @@ export const apiClient = {
             method: "POST",
             body: character,
         }),
-
+    saveKnowledge: ({ agentId, file }: { file: File; agentId: UUID }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return fetcher({
+            url: `/agents/${agentId}/upload-file-to-knowledge`,
+            method: "POST",
+            body: formData,
+        });
+    },
     restartAgent: (character: Character) =>
         fetcher({
             url: `/restart-agent`,

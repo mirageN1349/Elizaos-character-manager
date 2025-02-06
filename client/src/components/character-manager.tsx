@@ -4,7 +4,8 @@ import { Textarea } from "./ui/textarea";
 import { apiClient } from "@/lib/api";
 import type { Character } from "@elizaos/core";
 import { useToast } from "@/hooks/use-toast";
-import React from "react";
+import React, { ChangeEvent } from "react";
+import { Input } from "./ui/input";
 
 enum ModelProviderName {
     OPENAI = "openai",
@@ -70,6 +71,8 @@ export const CharacterManager = () => {
     const [character, setCharacter] =
         React.useState<Character>(defaultCharacter);
 
+    const [file, setFile] = React.useState<File>();
+
     const { mutateAsync: saveCharacter } = useMutation({
         // mutationKey: ["saveCharacter"],
         mutationFn: async () => {
@@ -90,8 +93,39 @@ export const CharacterManager = () => {
         },
     });
 
+    const { mutateAsync: saveKnowledgeFile } = useMutation({
+        // mutationKey: ["saveCharacter"],
+        mutationFn: apiClient.saveKnowledge,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["agents"] });
+            toast({
+                title: "Character saved",
+            });
+        },
+        onError(error) {
+            toast({
+                title: error.message,
+                variant: "destructive",
+            });
+        },
+    });
+
     const onSaveCharacter = async () => {
         saveCharacter();
+    };
+
+    const onFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        setFile(file);
+    };
+
+    const onSaveFile = async () => {
+        if (file) {
+            saveKnowledgeFile({
+                agentId: "b850bc30-45f8-0041-a00a-83df46d8555d",
+                file,
+            });
+        }
     };
 
     return (
@@ -102,6 +136,12 @@ export const CharacterManager = () => {
                 className="w-[50%] h-[50%]"
             />
             <Button className="mt-5" onClick={onSaveCharacter}>
+                Save and restart
+            </Button>
+
+            <Input onChange={onFileUpload} type="file" />
+
+            <Button className="mt-5" onClick={onSaveFile}>
                 Save and restart
             </Button>
         </div>

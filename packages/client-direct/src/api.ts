@@ -1,6 +1,8 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import path from "node:path";
+import fs from "node:fs";
 
 import {
     AgentRuntime,
@@ -9,6 +11,7 @@ import {
     UUID,
     validateCharacterConfig,
     ServiceType,
+    Character,
 } from "@elizaos/core";
 
 import { TeeLogQuery, TeeLogService } from "@elizaos/plugin-tee-log";
@@ -243,18 +246,20 @@ export function createApiRouter(
 
             for (const agentRuntime of agents.values()) {
                 const teeLogService = agentRuntime
-                    .getService<TeeLogService>(
-                    ServiceType.TEE_LOG
-                )
-                .getInstance();
+                    .getService<TeeLogService>(ServiceType.TEE_LOG)
+                    .getInstance();
 
                 const agents = await teeLogService.getAllAgents();
-                allAgents.push(...agents)
+                allAgents.push(...agents);
             }
 
             const runtime: AgentRuntime = agents.values().next().value;
-            const teeLogService = runtime.getService<TeeLogService>(ServiceType.TEE_LOG).getInstance();
-            const attestation = await teeLogService.generateAttestation(JSON.stringify(allAgents));
+            const teeLogService = runtime
+                .getService<TeeLogService>(ServiceType.TEE_LOG)
+                .getInstance();
+            const attestation = await teeLogService.generateAttestation(
+                JSON.stringify(allAgents)
+            );
             res.json({ agents: allAgents, attestation: attestation });
         } catch (error) {
             elizaLogger.error("Failed to get TEE agents:", error);
@@ -274,13 +279,13 @@ export function createApiRouter(
             }
 
             const teeLogService = agentRuntime
-                .getService<TeeLogService>(
-                ServiceType.TEE_LOG
-            )
-            .getInstance();
+                .getService<TeeLogService>(ServiceType.TEE_LOG)
+                .getInstance();
 
             const teeAgent = await teeLogService.getAgent(agentId);
-            const attestation = await teeLogService.generateAttestation(JSON.stringify(teeAgent));
+            const attestation = await teeLogService.generateAttestation(
+                JSON.stringify(teeAgent)
+            );
             res.json({ agent: teeAgent, attestation: attestation });
         } catch (error) {
             elizaLogger.error("Failed to get TEE agent:", error);
@@ -309,12 +314,16 @@ export function createApiRouter(
                 };
                 const agentRuntime: AgentRuntime = agents.values().next().value;
                 const teeLogService = agentRuntime
-                    .getService<TeeLogService>(
-                        ServiceType.TEE_LOG
-                    )
+                    .getService<TeeLogService>(ServiceType.TEE_LOG)
                     .getInstance();
-                const pageQuery = await teeLogService.getLogs(teeLogQuery, page, pageSize);
-                const attestation = await teeLogService.generateAttestation(JSON.stringify(pageQuery));
+                const pageQuery = await teeLogService.getLogs(
+                    teeLogQuery,
+                    page,
+                    pageSize
+                );
+                const attestation = await teeLogService.generateAttestation(
+                    JSON.stringify(pageQuery)
+                );
                 res.json({
                     logs: pageQuery,
                     attestation: attestation,
@@ -327,6 +336,33 @@ export function createApiRouter(
             }
         }
     );
+
+    router.post("/character", async (req, res) => {
+        const character = req.body as unknown as Character;
+
+        const filename = `${character.name.toLowerCase().replace(/\s/g, "_")}.character.json`;
+        const uploadDir = path.join(process.cwd(), "..", "characters");
+
+        await fs.promises.writeFile(
+            path.join(uploadDir, filename),
+            JSON.stringify(character)
+        );
+
+        res.json({ success: true, message: "Character saved" });
+    });
+
+    router.post("/restart-agent", async (req, res) => {
+        const character = req.body as unknown as Character;
+
+        await directClient.startAgent(character);
+
+        res.json({ success: true, message: "Agent restarted" });
+    });
+
+    // router.get("/character", async (req, res) => {
+    //     // const character = req.body;
+    //     console.log("GET");
+    // });
 
     return router;
 }

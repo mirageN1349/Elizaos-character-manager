@@ -9,6 +9,7 @@ import Chat from "./routes/chat";
 import Overview from "./routes/overview";
 import Home from "./routes/home";
 import useVersion from "./hooks/use-version";
+import CharacterManagerRoute from "./routes/character-manager";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -36,6 +37,10 @@ function App() {
                                 <div className="flex flex-1 flex-col gap-4 size-full container">
                                     <Routes>
                                         <Route path="/" element={<Home />} />
+                                        <Route
+                                            path="character-manager"
+                                            element={<CharacterManagerRoute />}
+                                        />
                                         <Route
                                             path="chat/:agentId"
                                             element={<Chat />}

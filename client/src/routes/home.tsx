@@ -18,7 +18,7 @@ export default function Home() {
     const query = useQuery({
         queryKey: ["agents"],
         queryFn: () => apiClient.getAgents(),
-        refetchInterval: 5_000
+        refetchInterval: 5_000,
     });
 
     const agents = query?.data?.agents;
@@ -26,6 +26,11 @@ export default function Home() {
     return (
         <div className="flex flex-col gap-4 h-full p-4">
             <PageTitle title="Agents" />
+            <NavLink to="/character-manager">
+                <Button variant="outline" className="w-full grow">
+                    Character Manager
+                </Button>
+            </NavLink>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {agents?.map((agent: { id: UUID; name: string }) => (
                     <Card key={agent.id}>

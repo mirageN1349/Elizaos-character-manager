@@ -102,4 +102,17 @@ export const apiClient = {
             body: formData,
         });
     },
+    saveCharacter: (character: Character) =>
+        fetcher({
+            url: `/character`,
+            method: "POST",
+            body: character,
+        }),
+
+    restartAgent: (character: Character) =>
+        fetcher({
+            url: `/restart-agent`,
+            method: "POST",
+            body: character,
+        }),
 };
